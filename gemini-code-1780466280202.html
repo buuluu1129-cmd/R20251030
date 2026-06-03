@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RWA Casino Trivia (Kahoot Style)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #0d1117;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #00ffcc;
+            text-shadow: 0 0 10px #00ffcc;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #ff007f;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+        .header-stats {
+            display: flex;
+            justify-content: space-around;
+            background: #161b22;
+            padding: 15px;
+            border: 2px solid #ff007f;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 0 15px #ff007f;
+            font-size: 1.5em;
+        }
+        .balance { color: #ffd700; }
+        
+        /* Betting Phase */
+        #betting-phase {
+            background: #161b22;
+            padding: 40px 20px;
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 2px solid #00ffcc;
+        }
+        input {
+            padding: 15px;
+            font-size: 1.5em;
+            border-radius: 10px;
+            border: 2px solid #00ffcc;
+            background-color: #0d1117;
+            color: #fff;
+            text-align: center;
+            width: 80%;
+            margin-bottom: 20px;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .btn-deal {
+            background-color: #ff007f;
+            color: white;
+            padding: 20px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 85%;
+            transition: 0.2s;
+            box-shadow: 0 0 15px #ff007f;
+            text-transform: uppercase;
+        }
+        .btn-deal:hover { transform: scale(1.05); }
+
+        /* Trivia Phase */
+        #trivia-phase {
+            display: none;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .question-box {
+            background: white;
+            color: black;
+            padding: 30px;
+            font-size: 1.8em;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 0 #cccccc;
+        }
+        
+        /* Kahoot Style Grid */
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .answer-btn {
+            padding: 40px 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .answer-btn:active {
+            transform: translateY(6px);
+            box-shadow: none;
+        }
+        
+        /* The Classic 4 Colors */
+        .color-red { background-color: #e21b3c; }
+        .color-blue { background-color: #1368ce; }
+        .color-yellow { background-color: #d89e00; }
+        .color-green { background-color: #26890c; }
+
+        /* Timer Bar */
+        #timer-container {
+            width: 100%;
+            background: #333;
+            height: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: #00ffcc;
+            transition: width 1s linear;
+        }
+        .timer-text { font-size: 2em; margin-bottom: 10px; }
+
+        /* Result Screen */
+        #result-phase {
+            display: none;
+            padding: 40px 20px;
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #161b22;
+            border: 2px solid #ffd700;
+        }
+        .result-title { font-size: 3em; margin-bottom: 10px; }
+        .win-text { color: #00ff00; }
+        .lose-text { color: #e21b3c; }
+    </style>
+</head>
+<body>
+
+    <h1>🧠 RWA Trivia High Roller 🎰</h1>
+    <p class="subtitle">Bet big, answer fast, secure the bag!</p>
+
+    <div class="header-stats">
+        <div class="balance">💰 <span id="balance">5000</span> USDC</div>
+        <div class="bet-display">🎲 Stake: <span id="current-bet">0</span></div>
+    </div>
+
+    <!-- BETTING PHASE -->
+    <div id="betting-phase">
+        <h2>Place Your Stake!</h2>
+        <p>You must bet blindly before the question is revealed.</p>
+        <input type="number" id="bet-input" value="500" min="10" max="5000">
+        <button class="btn-deal" onclick="dealQuestion()">Deal Question 🃏</button>
+        <p id="bet-error" style="color: #ff3333; display: none;">Insufficient funds or invalid bet!</p>
+    </div>
+
+    <!-- TRIVIA PHASE -->
+    <div id="trivia-phase">
+        <div class="timer-text">⏳ <span id="time-left">10</span>s</div>
+        <div id="timer-container"><div id="timer-bar"></div></div>
+
+        <div class="question-box" id="question-text">
+            Loading question...
+        </div>
+
+        <div class="answers-grid">
+            <button class="answer-btn color-red" onclick="submitAnswer(0)">🔺 <span id="ans-0"></span></button>
+            <button class="answer-btn color-blue" onclick="submitAnswer(1)">🔷 <span id="ans-1"></span></button>
+            <button class="answer-btn color-yellow" onclick="submitAnswer(2)">🟡 <span id="ans-2"></span></button>
+            <button class="answer-btn color-green" onclick="submitAnswer(3)">🟩 <span id="ans-3"></span></button>
+        </div>
+    </div>
+
+    <!-- RESULT PHASE -->
+    <div id="result-phase">
+        <div class="result-title" id="result-title">Winner!</div>
+        <h3 id="result-desc">You answered in 2.5 seconds (3x Multiplier!)</h3>
+        <button class="btn-deal" style="margin-top: 20px;" onclick="resetToBetting()">Next Round ➡️</button>
+    </div>
+
+    <script>
+        // RWA / Crypto Question Bank
+        const questions = [
+            { q: "What does RWA stand for in the crypto world?", options: ["Real World Asset", "Random Wild Ape", "Radical Web App", "Real Wealth Allocation"], correct: 0 },
+            { q: "What is a massive benefit of tokenizing a skyscraper?", options: ["Free Wi-Fi", "Fractional Ownership", "No property taxes", "It floats on the blockchain"], correct: 1 },
+            { q: "Which of these is a common Real World Asset being tokenized today?", options: ["Bitcoin", "Ethereum", "Treasury Bills", "Magic Internet Money"], correct: 2 },
+            { q: "What executes the rules of a tokenized asset automatically?", options: ["A Lawyer", "The SEC", "Proof of Work", "A Smart Contract"], correct: 3 },
+            { q: "If you own an RWA token representing gold, what do you theoretically own?", options: ["A picture of gold", "Physical gold in a vault", "Digital gold mining power", "A gold-themed NFT"], correct: 1 }
+        ];
+
+        let balance = 5000;
+        let currentBet = 0;
+        let currentQuestion;
+        let timeLeft = 10;
+        let timerInterval;
+        let isAnswering = false;
+
+        // Shuffle function to keep answers random
+        function shuffleOptions(question) {
+            const correctAnswerText = question.options[question.correct];
+            const shuffled = [...question.options].sort(() => Math.random() - 0.5);
+            const newCorrectIndex = shuffled.indexOf(correctAnswerText);
+            return { q: question.q, options: shuffled, correct: newCorrectIndex };
+        }
+
+        function dealQuestion() {
+            const betInput = parseInt(document.getElementById('bet-input').value);
+            const errorMsg = document.getElementById('bet-error');
+
+            if (isNaN(betInput) || betInput <= 0 || betInput > balance) {
+                errorMsg.style.display = "block";
+                return;
+            }
+
+            // Lock in bet
+            errorMsg.style.display = "none";
+            currentBet = betInput;
+            balance -= currentBet;
+            updateHeader();
+
+            // Prepare Question
+            const randomQ = questions[Math.floor(Math.random() * questions.length)];
+            currentQuestion = shuffleOptions(randomQ);
+
+            document.getElementById('question-text').innerText = currentQuestion.q;
+            document.getElementById('ans-0').innerText = currentQuestion.options[0];
+            document.getElementById('ans-1').innerText = currentQuestion.options[1];
+            document.getElementById('ans-2').innerText = currentQuestion.options[2];
+            document.getElementById('ans-3').innerText = currentQuestion.options[3];
+
+            // Switch UI
+            document.getElementById('betting-phase').style.display = "none";
+            document.getElementById('trivia-phase').style.display = "block";
+
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 10;
+            isAnswering = true;
+            document.getElementById('time-left').innerText = timeLeft;
+            document.getElementById('timer-bar').style.width = "100%";
+            document.getElementById('timer-bar').style.transition = "none"; // Reset bar visually instantly
+            
+            // Small delay to allow CSS reset, then start animation
+            setTimeout(() => {
+                document.getElementById('timer-bar').style.transition = "width 1s linear";
+            }, 50);
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time-left').innerText = timeLeft;
+                document.getElementById('timer-bar').style.width = `${(timeLeft / 10) * 100}%`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleResult(-1); // -1 means timeout
+                }
+            }, 1000);
+        }
+
+        function submitAnswer(selectedIndex) {
+            if (!isAnswering) return;
+            clearInterval(timerInterval);
+            isAnswering = false;
+            handleResult(selectedIndex);
+        }
+
+        function handleResult(selectedIndex) {
+            document.getElementById('trivia-phase').style.display = "none";
+            const resultPhase = document.getElementById('result-phase');
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+
+            if (selectedIndex === currentQuestion.correct) {
+                // Determine multiplier based on speed
+                let multiplier = 1.5;
+                let speedText = "Good";
+                if (timeLeft >= 7) { multiplier = 3.0; speedText = "Godlike Speed!"; }
+                else if (timeLeft >= 4) { multiplier = 2.0; speedText = "Very Fast!"; }
+
+                const winnings = Math.floor(currentBet * multiplier);
+                balance += winnings;
+
+                title.innerHTML = `<span class="win-text">Correct! 🎯</span>`;
+                desc.innerHTML = `${speedText} You had ${timeLeft}s left.<br><br><b>${multiplier}x Multiplier!</b><br>You won ${winnings} USDC!`;
+            } else {
+                title.innerHTML = `<span class="lose-text">${selectedIndex === -1 ? "Time's Up! ⏰" : "Wrong! 💥"}</span>`;
+                desc.innerHTML = `The correct answer was: <br><i>${currentQuestion.options[currentQuestion.correct]}</i><br><br>You lost your ${currentBet} USDC stake.`;
+            }
+
+            updateHeader();
+            resultPhase.style.display = "block";
+
+            if (balance <= 0) {
+                desc.innerHTML += `<br><br><span class="lose-text">REKT! You are out of funds. Refresh to restart!</span>`;
+                document.querySelector('#result-phase button').style.display = "none";
+            }
+        }
+
+        function resetToBetting() {
+            document.getElementById('result-phase').style.display = "none";
+            document.getElementById('betting-phase').style.display = "block";
+            currentBet = 0;
+            document.getElementById('current-bet').innerText = "0";
+        }
+
+        function updateHeader() {
+            document.getElementById('balance').innerText = balance;
+            document.getElementById('current-bet').innerText = currentBet;
+        }
+    </script>
+</body>
+</html>
